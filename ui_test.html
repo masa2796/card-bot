@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シャドウバース ビヨンド カード一覧</title>
+    <!-- Tailwind CSS CDNを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 日本語表示のためにInterと任意の日本語フォントを指定 */
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #1a1a2e; /* ダークな背景 */
+            color: #e5e7eb; /* 明るいテキスト */
+        }
+        /* カード効果のテキストエリアのスクロールバーを非表示にする */
+        .effect-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .effect-scroll {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+    <!-- メインコンテナ -->
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center text-yellow-300">
+            シャドウバース ビヨンド カード一覧
+        </h1>
+
+        <!-- フィルタリング/検索エリア (今回は省略し、カード表示のみ) -->
+        <div class="mb-6">
+            <input type="text" id="search-input" placeholder="カード名を検索..."
+                   class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-200"
+                   oninput="filterCards()">
+        </div>
+
+        <!-- カードグリッド表示エリア -->
+        <div id="card-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            <!-- カードはJavaScriptでここに挿入されます -->
+        </div>
+    </div>
+
+    <!-- カード詳細モーダル (初期状態では非表示) -->
+    <div id="card-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50" onclick="closeModal(event)">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95"
+             onclick="event.stopPropagation()">
+            
+            <!-- モーダルヘッダー -->
+            <div class="p-4 sm:p-6 border-b border-gray-700 flex justify-between items-center sticky top-0 bg-gray-800 z-10">
+                <h2 id="modal-card-name" class="text-2xl font-bold text-yellow-400"></h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition duration-200 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- モーダルコンテンツ -->
+            <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 左側：画像と基本情報 -->
+                <div class="flex flex-col items-center">
+                    <!-- 画像切り替えタブ -->
+                    <div class="flex space-x-2 mb-4 bg-gray-700 p-1 rounded-lg">
+                        <button id="tab-unevolved" class="tab-button bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-sm" data-state="unevolved">進化前</button>
+                        <button id="tab-evolved" class="tab-button text-gray-300 hover:bg-gray-600 font-semibold py-2 px-4 rounded-lg text-sm" data-state="evolved">進化後</button>
+                    </div>
+
+                    <!-- カード画像 -->
+                    <img id="modal-card-image" src="" alt="カード画像" class="w-2/3 max-w-xs rounded-xl shadow-lg border-2 border-yellow-500 transition-all duration-300">
+                    
+                    <!-- コスト/クラス/レアリティ -->
+                    <div class="mt-4 text-center space-y-1 text-lg">
+                        <p id="modal-card-stats" class="text-2xl font-mono text-yellow-300"></p>
+                        <p id="modal-card-class" class="text-gray-300 text-sm"><span class="font-semibold">クラス:</span> </p>
+                        <p id="modal-card-rarity" class="text-gray-300 text-sm"><span class="font-semibold">レアリティ:</span> </p>
+                    </div>
+                </div>
+
+                <!-- 右側：効果テキストエリア -->
+                <div class="bg-gray-700 p-4 rounded-xl shadow-inner flex flex-col effect-scroll overflow-y-auto">
+                    <!-- 進化前効果 -->
+                    <div id="effect-unevolved" class="transition-opacity duration-300">
+                        <h3 class="text-xl font-bold mb-2 text-yellow-400 border-b border-yellow-400 pb-1">進化前効果</h3>
+                        <p id="modal-effect-1" class="text-gray-200 whitespace-pre-wrap"></p>
+                        <div id="modal-unevolved-keywords" class="mt-3 flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <!-- 進化後効果 (最初は非表示) -->
+                    <div id="effect-evolved" class="mt-6 pt-4 border-t border-gray-600 transition-opacity duration-300 hidden">
+                        <h3 class="text-xl font-bold mb-2 text-yellow-400 border-b border-yellow-400 pb-1">進化後効果</h3>
+                        <p id="modal-effect-2" class="text-gray-200 whitespace-pre-wrap"></p>
+                        <div id="modal-evolved-keywords" class="mt-3 flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <!-- その他情報 (CV/Illustrator) -->
+                    <div class="mt-auto pt-6 border-t border-gray-600 text-xs text-gray-400 space-y-1">
+                        <p id="modal-card-cv"></p>
+                        <p id="modal-card-illustrator"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // デモ用のカードデータ (進化後の情報は仮で追加)
+        const cardsData = [
+            {
+                "id": "10012110",
+                "url": "https://shadowverse-wb.com/ja/deck/cardslist/card/?card_id=10012110",
+                "name": "アドベンチャーエルフ・メイ",
+                "cost": 1,
+                "class": "エルフ",
+                "rarity": "シルバーレア",
+                "image_before": "https://shadowverse-wb.com/uploads/card_image/jpn/card/25f4787d1cac46989d70ae76fd03a0fb.png",
+                "image_after": "https://shadowverse-wb.com/uploads/card_image/jpn/card/78faa1d45c44480681864b2389cbba02.png",
+                "attack_1": 1,
+                "hp_1": 1,
+                "effect_1": "【ファンファーレ】【コンボ_3】相手の場のフォロワー1枚を選ぶ。それに3ダメージ。",
+                "attack_2": 3, /* 仮の進化後攻撃力 */
+                "hp_2": 3,     /* 仮の進化後体力 */
+                "effect_2": "【進化時】相手の場のフォロワーすべてに1ダメージ。\n進化前と同能力。", /* 仮の進化後効果 */
+                "keywords": ["コンボ", "ファンファーレ"],
+                "cv": "門脇舞以",
+                "illustrator": "ツネくん"
+            }
+            // 複数のカードがある場合はここに追加します
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCards(cardsData);
+        });
+
+        /**
+         * カードデータをグリッドに描画する
+         * @param {Array<Object>} cards - 描画するカードの配列
+         */
+        function renderCards(cards) {
+            const grid = document.getElementById('card-grid');
+            grid.innerHTML = ''; // グリッドをクリア
+
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = "relative bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl hover:scale-[1.02] transition duration-300 cursor-pointer border border-gray-700";
+                cardElement.setAttribute('data-card-id', card.id);
+                cardElement.onclick = () => openModal(card.id);
+
+                // レアリティによる枠線色を決定
+                let rarityColor = 'border-gray-500';
+                if (card.rarity.includes('レジェンド')) rarityColor = 'border-yellow-500';
+                else if (card.rarity.includes('ゴールド')) rarityColor = 'border-amber-400';
+                else if (card.rarity.includes('シルバー')) rarityColor = 'border-slate-400';
+                
+                cardElement.innerHTML = `
+                    <!-- カード画像 -->
+                    <img src="${card.image_before}" alt="${card.name}" 
+                         class="w-full h-auto object-cover ${rarityColor} border-b-4">
+                    
+                    <!-- コスト (左上) -->
+                    <div class="absolute top-2 left-2 w-8 h-8 flex items-center justify-center bg-red-600 text-white font-extrabold rounded-full border-2 border-red-300 shadow-md text-sm">
+                        ${card.cost}
+                    </div>
+
+                    <!-- クラス (右上) -->
+                    <div class="absolute top-2 right-2 px-2 py-0.5 bg-green-700 text-white text-xs font-semibold rounded-full shadow-md">
+                        ${card.class}
+                    </div>
+
+                    <!-- カード名と基本ステータス (下部) -->
+                    <div class="p-2 text-center">
+                        <p class="text-sm font-semibold truncate text-gray-100">${card.name}</p>
+                        <p class="text-xs text-gray-400">${card.attack_1}/${card.hp_1} (${card.rarity})</p>
+                    </div>
+                `;
+                grid.appendChild(cardElement);
+            });
+        }
+
+        /**
+         * カード詳細モーダルを開く
+         * @param {string} cardId - カードのID
+         */
+        function openModal(cardId) {
+            const card = cardsData.find(c => c.id === cardId);
+            if (!card) return;
+
+            const modal = document.getElementById('card-modal');
+            const tabUnevolved = document.getElementById('tab-unevolved');
+            const tabEvolved = document.getElementById('tab-evolved');
+
+            // モーダルのコンテンツを設定
+            document.getElementById('modal-card-name').textContent = card.name;
+            document.getElementById('modal-card-class').innerHTML = `<span class="font-semibold">クラス:</span> ${card.class}`;
+            document.getElementById('modal-card-rarity').innerHTML = `<span class="font-semibold">レアリティ:</span> ${card.rarity}`;
+            document.getElementById('modal-card-cv').innerHTML = `<span class="font-semibold">CV:</span> ${card.cv || 'なし'}`;
+            document.getElementById('modal-card-illustrator').innerHTML = `<span class="font-semibold">Illustrator:</span> ${card.illustrator || 'なし'}`;
+            
+            // タブイベントリスナーを設定 (重複登録を防ぐため、一旦クリア)
+            tabUnevolved.onclick = () => showCardState(card, 'unevolved');
+            tabEvolved.onclick = () => showCardState(card, 'evolved');
+
+            // 初期表示は進化前
+            showCardState(card, 'unevolved');
+
+            // モーダルを表示
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        /**
+         * カードの進化状態に応じて表示を切り替える
+         * @param {Object} card - カードデータオブジェクト
+         * @param {('unevolved'|'evolved')} state - 表示する状態 ('unevolved' または 'evolved')
+         */
+        function showCardState(card, state) {
+            const isUnevolved = state === 'unevolved';
+            
+            // 画像、能力値、効果を設定
+            const imagePath = isUnevolved ? card.image_before : card.image_after;
+            const attack = isUnevolved ? card.attack_1 : card.attack_2;
+            const hp = isUnevolved ? card.hp_1 : card.hp_2;
+            const effect = isUnevolved ? card.effect_1 : card.effect_2;
+
+            document.getElementById('modal-card-image').src = imagePath;
+            document.getElementById('modal-card-stats').textContent = `${card.cost} PP / ${attack}/${hp}`;
+            
+            // 効果テキストを設定 (改行を反映)
+            document.getElementById('modal-effect-1').textContent = isUnevolved ? card.effect_1 : '';
+            document.getElementById('modal-effect-2').textContent = isUnevolved ? '' : card.effect_2;
+
+            // 効果エリアの表示・非表示を切り替え
+            const unevolvedEl = document.getElementById('effect-unevolved');
+            const evolvedEl = document.getElementById('effect-evolved');
+
+            if (isUnevolved) {
+                unevolvedEl.classList.remove('hidden');
+                evolvedEl.classList.add('hidden');
+            } else {
+                unevolvedEl.classList.add('hidden');
+                evolvedEl.classList.remove('hidden');
+            }
+
+            // タブのアクティブ状態を切り替え
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                if (btn.getAttribute('data-state') === state) {
+                    btn.classList.add('bg-yellow-600', 'text-white');
+                    btn.classList.remove('bg-gray-600', 'text-gray-300', 'hover:bg-gray-600');
+                } else {
+                    btn.classList.remove('bg-yellow-600', 'text-white');
+                    btn.classList.add('text-gray-300', 'hover:bg-gray-600');
+                }
+            });
+
+            // キーワードの描画
+            renderKeywords(card.keywords, isUnevolved ? 'modal-unevolved-keywords' : 'modal-evolved-keywords');
+        }
+
+        /**
+         * キーワードを描画する
+         */
+        function renderKeywords(keywords, targetId) {
+            const targetEl = document.getElementById(targetId);
+            targetEl.innerHTML = '';
+            keywords.forEach(keyword => {
+                const badge = document.createElement('span');
+                badge.className = 'px-3 py-1 bg-yellow-500 text-gray-900 text-xs font-bold rounded-full shadow-md';
+                badge.textContent = keyword;
+                targetEl.appendChild(badge);
+            });
+        }
+
+        /**
+         * モーダルを閉じる
+         */
+        function closeModal(event) {
+            // イベントがある場合は、背景クリックでのみ閉じるようにする
+            if (event && event.currentTarget !== event.target) {
+                return;
+            }
+            const modal = document.getElementById('card-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        /**
+         * カード名でフィルタリングする
+         */
+        function filterCards() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filteredCards = cardsData.filter(card => 
+                card.name.toLowerCase().includes(searchTerm)
+            );
+            renderCards(filteredCards);
+        }
+
+    </script>
+</body>
+</html>
