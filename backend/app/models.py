@@ -23,6 +23,7 @@ class CardSummary(BaseModel):
     attack: int
     hp: int
     effect: str
+    effects: List[str] = Field(default_factory=list)
     keywords: List[str] = Field(default_factory=list)
     image_before: str
     image_after: str

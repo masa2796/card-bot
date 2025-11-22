@@ -15,6 +15,7 @@ export type CardSummary = {
   attack: number;
   hp: number;
   effect: string;
+  effects: string[];
   keywords: string[];
   image_before: string;
   image_after: string;

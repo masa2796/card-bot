@@ -434,6 +434,19 @@ async def chat(query: str, history: List[ChatMessage] | None) -> ChatResponse:
                 master = get_card_master(c_id)
                 if master:
                     seen_card_ids.add(c_id)
+                    
+                    # Collect all effect_N fields
+                    effects_list = []
+                    for k, v in master.items():
+                        if k.startswith("effect_") and v:
+                            try:
+                                idx = int(k.split("_")[1])
+                                effects_list.append((idx, v))
+                            except ValueError:
+                                pass
+                    effects_list.sort(key=lambda x: x[0])
+                    sorted_effects = [val for _, val in effects_list]
+
                     card_summaries.append(CardSummary(
                         card_id=str(c_id),
                         name=master.get("name", "Unknown"),
@@ -443,6 +456,7 @@ async def chat(query: str, history: List[ChatMessage] | None) -> ChatResponse:
                         attack=master.get("attack", 0),
                         hp=master.get("hp", 0),
                         effect=master.get("effect_1") or doc.get("text", ""),
+                        effects=sorted_effects,
                         keywords=master.get("keywords", []),
                         image_before=master.get("image_before", ""),
                         image_after=master.get("image_after", "")

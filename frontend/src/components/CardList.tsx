@@ -77,9 +77,6 @@ export const CardList: React.FC<CardListProps> = ({ cards }) => {
                 />
                 
                 <div className="mt-4 text-center space-y-1 text-lg">
-                  <p className="text-2xl font-mono text-yellow-300">
-                    {selectedCard.cost} PP / {selectedCard.attack}/{selectedCard.hp}
-                  </p>
                   <p className="text-gray-300 text-sm">
                     <span className="font-semibold">クラス:</span> {selectedCard.class}
                   </p>
@@ -91,20 +88,33 @@ export const CardList: React.FC<CardListProps> = ({ cards }) => {
 
               {/* Right: Effect Text */}
               <div className="bg-gray-700 p-4 rounded-xl shadow-inner flex flex-col overflow-y-auto max-h-[400px]">
-                <div>
-                  <h3 className="text-xl font-bold mb-2 text-yellow-400 border-b border-yellow-400 pb-1">
-                    {isEvolved ? '進化後効果' : '進化前効果'}
-                  </h3>
-                  <p className="text-gray-200 whitespace-pre-wrap">
-                    {selectedCard.effect}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedCard.keywords.map((keyword, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-yellow-500 text-gray-900 text-xs font-bold rounded-full shadow-md">
-                        {keyword}
-                      </span>
-                    ))}
+                      <h3 className="text-xl font-bold mb-2 text-yellow-400 border-b border-yellow-400 pb-1">
+                        効果
+                      </h3>
+                {selectedCard.effects && selectedCard.effects.length > 0 ? (
+                  selectedCard.effects.map((effect, index) => (
+                    <div　className="mb-6 last:mb-0">
+                      <p className="text-gray-200 whitespace-pre-wrap">
+                        {effect}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div>
+                    <h3 className="text-xl font-bold mb-2 text-yellow-400 border-b border-yellow-400 pb-1">
+                      効果
+                    </h3>
+                    <p className="text-gray-200 whitespace-pre-wrap">
+                      {selectedCard.effect}
+                    </p>
                   </div>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedCard.keywords.map((keyword, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-yellow-500 text-gray-900 text-xs font-bold rounded-full shadow-md">
+                      {keyword}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
