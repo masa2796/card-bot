@@ -2,6 +2,7 @@
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "@/components/ChatMessage";
+import { CardList } from "@/components/CardList";
 import { ChatMessagePayload, sendChatMessage } from "@/lib/api";
 
 type Message = ChatMessagePayload & { id: string };
@@ -17,6 +18,7 @@ export default function HomePage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const isComposing = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,6 +47,7 @@ export default function HomePage() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: response.answer || "回答を生成できませんでした。",
+        cards: response.meta.cards,
       };
       setMessages((prev: Message[]) => [...prev, assistantMessage]);
     } catch (error) {
@@ -61,6 +64,7 @@ export default function HomePage() {
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
+      if (isComposing.current) return;
       event.preventDefault();
       void handleSubmit();
     }
@@ -69,14 +73,19 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">gamechat-ai</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">card-bot</h1>
         <p className="text-sm text-slate-500">ゲームカード攻略のためのシンプルな RAG チャット</p>
       </header>
 
       <section className="flex-1 overflow-y-auto rounded-2xl bg-slate-100 p-4">
         <div className="flex flex-col gap-4">
           {messages.map((message: Message) => (
-            <ChatMessage key={message.id} role={message.role} content={message.content} />
+            <div key={message.id} className="flex flex-col gap-2">
+              <ChatMessage role={message.role} content={message.content} />
+              {message.role === "assistant" && message.cards && message.cards.length > 0 && (
+                <CardList cards={message.cards} />
+              )}
+            </div>
           ))}
           {isLoading && (
             <div className="text-center text-xs text-slate-500">回答生成中…</div>
@@ -95,6 +104,12 @@ export default function HomePage() {
           placeholder="例: 水タイプで序盤に強いカードを教えて"
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onCompositionStart={() => {
+            isComposing.current = true;
+          }}
+          onCompositionEnd={() => {
+            isComposing.current = false;
+          }}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
         />

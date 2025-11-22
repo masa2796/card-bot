@@ -1,18 +1,48 @@
 from __future__ import annotations
+import json
 import logging
 import math
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 import httpx
 from fastapi import HTTPException
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from .models import ChatMessage, ChatResponse, ChatResponseMeta
+from .models import ChatMessage, ChatResponse, ChatResponseMeta, CardSummary
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# Load card master data
+CARD_MASTER_DATA: Dict[str, dict] = {}
+
+def _load_card_master_data():
+    global CARD_MASTER_DATA
+    try:
+        # Assuming backend/app/services.py is the location, data is in ../../data/data.json
+        base_dir = Path(__file__).resolve().parent.parent.parent
+        data_path = base_dir / "data" / "data.json"
+        
+        if not data_path.exists():
+            logger.warning(f"Card master data not found at {data_path}")
+            return
+
+        with open(data_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data:
+                if "id" in item:
+                    CARD_MASTER_DATA[str(item["id"])] = item
+        logger.info(f"Loaded {len(CARD_MASTER_DATA)} cards from master data.")
+    except Exception as e:
+        logger.error(f"Failed to load card master data: {e}")
+
+_load_card_master_data()
+
+def get_card_master(card_id: str) -> dict | None:
+    return CARD_MASTER_DATA.get(str(card_id))
 
 
 def _load_effect_namespaces() -> Tuple[str, ...]:
@@ -215,9 +245,10 @@ async def search_similar_docs(
         metadata = item.get("metadata") or {}
         text = metadata.get("text") or item.get("text") or item.get("data")
         title = metadata.get("title") or item.get("title")
+        card_id = metadata.get("card_id")
         if not text:
             continue
-        docs.append({"text": text, "title": title})
+        docs.append({"text": text, "title": title, "card_id": card_id})
 
     if not docs:
         logger.warning("Upstash returned no usable documents. Raw matches: %s", matches)
@@ -392,6 +423,31 @@ async def chat(query: str, history: List[ChatMessage] | None) -> ChatResponse:
 
         context_text = build_context_text(docs)
         titles = [doc.get("title") for doc in docs if doc.get("title")]
+        
+        # Build card summaries
+        card_summaries: List[CardSummary] = []
+        seen_card_ids = set()
+        
+        for doc in docs:
+            c_id = doc.get("card_id")
+            if c_id and c_id not in seen_card_ids:
+                master = get_card_master(c_id)
+                if master:
+                    seen_card_ids.add(c_id)
+                    card_summaries.append(CardSummary(
+                        card_id=str(c_id),
+                        name=master.get("name", "Unknown"),
+                        class_=master.get("class", "-"),
+                        rarity=master.get("rarity", "-"),
+                        cost=master.get("cost", 0),
+                        attack=master.get("attack", 0),
+                        hp=master.get("hp", 0),
+                        effect=master.get("effect_1") or doc.get("text", ""),
+                        keywords=master.get("keywords", []),
+                        image_before=master.get("image_before", ""),
+                        image_after=master.get("image_after", "")
+                    ))
+
         answer = await generate_answer(query, context_text, history, titles)
         return ChatResponse(
             answer=answer,
@@ -403,6 +459,7 @@ async def chat(query: str, history: List[ChatMessage] | None) -> ChatResponse:
                 raw_match_count=diagnostics.get("raw_match_count"),
                 upstash_status_code=diagnostics.get("upstash_status_code"),
                 upstash_error=diagnostics.get("warning"),
+                cards=card_summaries,
             ),
         )
     except HTTPException:

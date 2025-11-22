@@ -3,12 +3,28 @@ export type ChatRole = "user" | "assistant";
 export type ChatMessagePayload = {
   role: ChatRole;
   content: string;
+  cards?: CardSummary[];
+};
+
+export type CardSummary = {
+  card_id: string;
+  name: string;
+  class: string;
+  rarity: string;
+  cost: number;
+  attack: number;
+  hp: number;
+  effect: string;
+  keywords: string[];
+  image_before: string;
+  image_after: string;
 };
 
 export type ChatResponse = {
   answer: string;
   meta: {
     used_context_count: number;
+    cards?: CardSummary[];
   };
 };
 
