@@ -55,25 +55,27 @@ export const CardList: React.FC<CardListProps> = ({ cards }) => {
             <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left: Image & Basic Info */}
               <div className="flex flex-col items-center">
-                <div className="flex space-x-2 mb-4 bg-gray-700 p-1 rounded-lg">
-                  <button 
-                    onClick={() => setIsEvolved(false)}
-                    className={`font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${!isEvolved ? 'bg-yellow-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}
-                  >
-                    進化前
-                  </button>
-                  <button 
-                    onClick={() => setIsEvolved(true)}
-                    className={`font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${isEvolved ? 'bg-yellow-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}
-                  >
-                    進化後
-                  </button>
-                </div>
+                {selectedCard.image_after && (
+                  <div className="flex space-x-2 mb-4 bg-gray-700 p-1 rounded-lg">
+                    <button 
+                      onClick={() => setIsEvolved(false)}
+                      className={`font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${!isEvolved ? 'bg-yellow-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}
+                    >
+                      進化前
+                    </button>
+                    <button 
+                      onClick={() => setIsEvolved(true)}
+                      className={`font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${isEvolved ? 'bg-yellow-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}
+                    >
+                      進化後
+                    </button>
+                  </div>
+                )}
 
                 <img 
                   src={isEvolved ? selectedCard.image_after : selectedCard.image_before} 
                   alt={selectedCard.name} 
-                  className="w-2/3 max-w-xs rounded-xl shadow-lg border-2 border-yellow-500 transition-all duration-300"
+                  className="w-2/3 max-w-xs rounded-xl shadow-lg transition-all duration-300"
                 />
                 
                 <div className="mt-4 text-center space-y-1 text-lg">
@@ -93,7 +95,7 @@ export const CardList: React.FC<CardListProps> = ({ cards }) => {
                       </h3>
                 {selectedCard.effects && selectedCard.effects.length > 0 ? (
                   selectedCard.effects.map((effect, index) => (
-                    <div　className="mb-6 last:mb-0">
+                    <div　key={index}　className="mb-1 last:mb-0">
                       <p className="text-gray-200 whitespace-pre-wrap">
                         {effect}
                       </p>

@@ -31,7 +31,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, onClick }) => {
       {/* カード名と基本ステータス (下部) */}
       <div className="p-2 text-center">
         <p className="text-sm font-semibold truncate text-gray-100">{card.name}</p>
-        <p className="text-xs text-gray-400">{card.attack}/{card.hp} ({card.rarity})</p>
+        <p className="text-xs text-gray-400">{card.rarity}</p>
       </div>
     </div>
   );
